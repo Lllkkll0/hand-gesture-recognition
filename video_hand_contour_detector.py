@@ -30,7 +30,7 @@ class VideoHandContourDetector:
         if not cap.isOpened():
             print(f"无法打开视频文件: {video_path}")
             return
-        
+       
         # 获取视频属性
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -110,18 +110,26 @@ class VideoHandContourDetector:
         cv2.destroyAllWindows()
 
 def main():
-    # 解析命令行参数
-    parser = argparse.ArgumentParser(description="从视频中检测手部轮廓")
-    parser.add_argument("--input", type=str, required=True, help="输入视频路径")
-    parser.add_argument("--output", type=str, help="输出视频路径")
-    args = parser.parse_args()
-    
+    # 批量处理 G:\hand\hand video 下所有视频
+    import os
+    input_dir = "G:\\hand\\hand video"
+    output_dir = "G:\\hand\\hand video resluts"
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 支持的视频格式
+    exts = ['.mp4', '.avi', '.mov', '.mkv', '.wmv']
+
     # 初始化检测器
     detector = VideoHandContourDetector()
-    
-    # 处理视频
-    output_path = args.output if args.output else "G:\\hand\\hand video resluts\\output.mp4"
-    detector.process_video(args.input, output_path)
+
+    for filename in os.listdir(input_dir):
+        name, ext = os.path.splitext(filename)
+        if ext.lower() in exts:
+            input_path = os.path.join(input_dir, filename)
+            output_path = os.path.join(output_dir, f"{name}_result.mp4")
+            print(f"\n开始处理: {input_path}")
+            detector.process_video(input_path, output_path)
+            print(f"结果已保存: {output_path}")
 
 if __name__ == "__main__":
     main()
