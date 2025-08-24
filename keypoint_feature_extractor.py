@@ -13,21 +13,22 @@ class HandFeatureExtractor:
         )
         
     def extract_keypoint_features(self, image):
-        """提取手部关键点特征"""
+        """提取所有手的关键点特征，返回特征列表和手数量"""
         # 将BGR转换为RGB
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         
         # 处理图像
         results = self.hands.process(image_rgb)
         
-        features = []
-        hand_present = False
+        features_list = []
+        hand_count = 0
         
         if results.multi_hand_landmarks:
-            hand_present = True
+            hand_count = len(results.multi_hand_landmarks)
             
             for hand_landmarks in results.multi_hand_landmarks:
-                # 提取所有21个关键点的坐标
+                features = []
+                # 21个关键点坐标
                 landmarks = []
                 for landmark in hand_landmarks.landmark:
                     landmarks.append([landmark.x, landmark.y, landmark.z])
@@ -36,7 +37,7 @@ class HandFeatureExtractor:
                 landmarks = np.array(landmarks).flatten()
                 features.extend(landmarks)
 
-                # 计算指尖与手掌的距离（高级特征）
+                # 手掌中心
                 palm_center = np.mean([
                     [hand_landmarks.landmark[0].x, hand_landmarks.landmark[0].y],
                     [hand_landmarks.landmark[5].x, hand_landmarks.landmark[5].y],
@@ -68,7 +69,6 @@ class HandFeatureExtractor:
                         angles.append(angle)
                 
                 features.extend(angles)
+                features_list.append(np.array(features).flatten())
         
-        features = np.array(features).flatten()
-        
-        return features, hand_present
+        return features_list, hand_count

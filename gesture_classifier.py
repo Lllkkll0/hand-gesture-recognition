@@ -82,7 +82,7 @@ class GestureRecognizer:
         
         return prediction
     
-    def recognize_gesture(self, image):
+    def recognize_gesture(self, features):
         """识别图像中的手势
         
         参数:
@@ -91,10 +91,8 @@ class GestureRecognizer:
         返回:
             识别到的手势标签和置信度
         """
-        # 提取特征
-        features, hand_present = self.feature_extractor.extract_keypoint_features(image)
-        
-        if not hand_present or features.size == 0:
+        # 校验特征长度是否与 scaler 期望一致
+        if features is None or len(features) != self.scaler.n_features_in_:
             return None, 0.0
         
         # 预测
@@ -102,13 +100,11 @@ class GestureRecognizer:
         if prediction is None:
             return None, 0.0
         proba = self.classifier.predict_proba([self.preprocess_features(features)])[0]
-        # 修正索引越界问题
         if prediction >= len(proba):
             print(f"警告: 预测类别索引 {prediction} 超出概率数组长度 {len(proba)}，返回最低置信度。")
             confidence = min(proba)
         else:
             confidence = proba[prediction]
-        # gesture_labels 可能是 dict 或 list，做兼容处理
         label = self.gesture_labels[prediction] if isinstance(self.gesture_labels, (list, tuple)) else self.gesture_labels.get(prediction, "未知")
         return label, confidence
     
@@ -133,11 +129,10 @@ class GestureRecognizer:
         try:
             with open(model_path, 'rb') as f:
                 model_data = pickle.load(f)
-            
             self.classifier = model_data['classifier']
             self.scaler = model_data['scaler']
-            self.gesture_labels = model_data.get('gesture_labels', self.gesture_labels)
-            
+            # 强制赋值 gesture_labels，避免属性缺失
+            self.gesture_labels = model_data['gesture_labels'] if 'gesture_labels' in model_data else self.gesture_labels
             print(f"模型已从 {model_path} 加载")
         except Exception as e:
             print(f"加载模型时出错: {e}")
